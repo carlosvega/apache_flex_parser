@@ -7,15 +7,16 @@ using namespace std;
 %%
 [ \t] ;
 \n           { return END; }
-([0-9]{1,3}\.){3}[0-9]{1,3} { yylval.sval = strdup(yytext); return IP; }
+([0-9]{1,3}\.){3}[0-9]{1,3} { yylval.sval = (yytext); return IP; }
 [0-9]+\.[0-9]+ { yylval.fval = atof(yytext); return FLOAT; }
 [0-9]+         { yylval.ival = atoi(yytext); return INT; }
-\[([^\]]+)\]   { yylval.sval = strdup(yytext); return APACHE_DATE;}
-[a-zA-Z0-9\./\<\>\?\;\:\'\`\!\@\#\$\%\^\&\*\(\)\[\]\{\}\_\+\=\|\\\-]+   {
-	yylval.sval = strdup(yytext);
+\[([^\]]+)\]   { yylval.sval = (yytext); return APACHE_DATE;}
+[^[:space:]\"]+   {
+	yylval.sval = (yytext);
 	return STRING;
 }
-\"[a-zA-Z0-9\./\<\>\?\;\:\'\`\!\@\#\$\%\^\&\*\(\)\[\]\{\}\_\+\=\|\\\-]+\" {yylval.sval = strdup(yytext); return HEADER;}
-\"[a-zA-Z0-9\ \./\<\>\?\;\:\'\`\!\@\#\$\%\^\&\*\(\)\[\]\{\}\_\+\=\|\\\-]+\"$ {yylval.sval = strdup(yytext); return HEADER;}
+\"[^\"[:blank:]]+\" {yylval.sval = (yytext); return HEADER;}
+\"([^\"]+)\"$ {yylval.sval = (yytext); return HEADER;}
+
 .              ;
 %%

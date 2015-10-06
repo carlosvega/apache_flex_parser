@@ -20,14 +20,13 @@ void yyerror(const char *s);
 // holding each of the types of tokens that Flex could return, and have Bison
 // use that union instead of "int" for the definition of "yystype":
 %union {
-	long ival;
-	double fval;
+	int ival;
+	float fval;
 	char *sval;
 }
 
 // define the constant-string tokens:
 %token END
-%token COMILLA
 
 // define the "terminal symbol" token types I'm going to use (in CAPS
 // by convention), and associate each with a field of the union:
@@ -43,51 +42,56 @@ void yyerror(const char *s);
 // the first rule defined is the highest-level rule, which in our
 // case is just the concept of a whole "snazzle file":
 apache_log:
-	apache_lines { cout << "done with a apache log file!" << endl; }
+	apache_lines { cout << "done with a apache log file!" << '\n'; }
 apache_lines:
 	apache_lines apache_line 
 	| apache_line
 	;
 apache_line:
-	APACHE_ADDR IDENTD USER_ID DATE REQUEST STATUS_CODE SIZE endl { cout << "done with a apache log line!\n" << endl; }
-	| APACHE_ADDR IDENTD USER_ID DATE REQUEST STATUS_CODE SIZE headers endl { cout << "done with a apache log line!\n" << endl; }
+	APACHE_ADDR IDENTD USER_ID DATE REQUEST STATUS_CODE SIZE apache_optional { cout << "}" << '\n'; }
+	| error endl {yyerrok;}
+	;
+apache_optional:
+	| endl
+	| headers endl
+	| headers
 	;
 headers:
-	headers header //{ cout << "reading a field" << $2 << endl; }
-	| header //{ cout << "reading a field" << $2 << endl; }
+	headers header //{ cout << "reading a field" << $2 << '\n'; }
+	| header //{ cout << "reading a field" << $2 << '\n'; }
 	;
 header:
-	HEADER { n_headers++; cout << "reading a header " << n_headers << " field! " << $1 << endl; }
+	HEADER { n_headers++; cout << ", \"header_" << n_headers << "\": " << $1}
 	;
 APACHE_ADDR:
-	IP	  { n_lineas++; n_headers=0; cout << "New line, number: " << n_lineas << endl; cout << "reading an IP field! " << $1 << endl; }
+	IP	  { n_lineas++; n_headers=0; cout << "{ \"ip\": \"" << $1 << "\"" }
 	;
 IDENTD:
-	STRING {cout << "reading an IDENTD field! " << $1 << endl; }
+	STRING {cout << ", \"identd\": \"" << $1 << "\"" }
 	;
 USER_ID:
-	STRING {cout << "reading an USER_ID field! " << $1 << endl; }
+	STRING {cout << ", \"user_id\": \"" << $1 << "\"" }
 	;
 DATE:
-	APACHE_DATE { cout << "reading an APACHE_DATE field! " << $1 << endl; }
+	APACHE_DATE { cout << ", \"date\": \"" << $1 << "\"" }
 	;
 REQUEST:
 	METHOD URI VERSION
 	;
 METHOD:
-	STRING { cout << "reading a METHOD field! " << $1 << endl; }
+	STRING {cout << ", \"method\": \"" << $1 << "\"" }
 	;
 URI:
-	STRING { cout << "reading a URI field! " << $1 << endl; }
+	STRING {cout << ", \"uri\": \"" << $1 << "\"" }
 	;
 VERSION:
-	STRING { cout << "reading a VERSION field! " << $1 << endl; }
+	STRING {cout << ", \"version\": \"" << $1 << "\"" }
 	;
 STATUS_CODE:
-	INT       { cout << "reading a STATUS_CODE field! " << $1 << endl; }
+	INT       { cout << ", \"status_code\": \"" << $1 << "\"" }
 	;
 SIZE:
-	INT       { cout << "reading a SIZE field! " << $1 << endl; }
+	INT       { cout << ", \"size\": \"" << $1 << "\""  }
 	;
 endl:
 	END
@@ -95,12 +99,12 @@ endl:
 
 %%
 
-int main(int, char**) {
+int main(int argc, char* argv[]) {
 	// open a file handle to a particular file:
-	FILE *myfile = fopen("in.apache", "r");
+	FILE *myfile = fopen(argv[1], "r");
 	// make sure it's valid:
 	if (!myfile) {
-		cout << "I can't open in.apache file!" << endl;
+		cout << "I can't open in.apache file!" << '\n';
 		return -1;
 	}
 	// set flex to read from it instead of defaulting to STDIN:
@@ -114,7 +118,6 @@ int main(int, char**) {
 }
 
 void yyerror(const char *s) {
-	cout << "EEK, parse error!  Message: " << s << endl;
+	cout << "EEK, parse error!  Message: " << s << " Continue...\n" << '\n';
 	// might as well halt now:
-	exit(-1);
 }
