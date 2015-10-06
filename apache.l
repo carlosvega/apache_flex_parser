@@ -6,6 +6,7 @@ using namespace std;
 
 %}
 %%
+
 [ \t] ;
 \n           { return END; }
 <<EOF>>		{ return EOF_TOKEN; }
